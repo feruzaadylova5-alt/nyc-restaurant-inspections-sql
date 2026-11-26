@@ -1,6 +1,27 @@
-# NYC Restaurant Inspections: Data Cleaning in SQL
+# NYC Restaurant Inspections: Where to Open a New Restaurant
 
-Cleaning the New York City restaurant inspection dataset with **MySQL**, turning a raw public export into an analysis-ready table.
+An end-to-end data analysis case study (Google Data Analytics capstone): cleaning ~295,000 NYC restaurant inspection records in **MySQL**, analyzing them with SQL, and presenting the results in a **Tableau Public** dashboard.
+
+**📊 Dashboard:** [NYC Restaurant Inspections on Tableau Public](https://public.tableau.com/views/NYCRestaurantInspections_17956346991850/Dashboard1)
+
+## Business task
+
+A restaurant chain owner plans to open a new branch in New York City. The task: compare boroughs by food-safety performance and competition, find the most common health violations, and identify what leads to closures, so the client can choose a location and prepare the new branch for inspections.
+
+## Key findings
+
+1. **Borough has little impact on inspection results.** Average initial inspection scores range only from 16.9 (Staten Island) to 18.8 (Queens); no borough is clearly best on every metric.
+2. **Each borough has a distinct cuisine profile.** American food leads everywhere, but takes 22.5% of restaurants in Manhattan vs 12.6–16% elsewhere; Queens is the most balanced market.
+3. **Ten issues cause two-thirds of all violations (64.3%).** About a third of all violations can be prevented once, before opening (equipment, pest-proofing, plumbing, certified manager).
+4. **Pests are the main driver of closures.** Conditions for pests (08A) and mice (04L) top the list of violations at inspections that ended in closure; roaches appear in the top 10 only for closures.
+
+**Recommendation:** choose a location by competition and pest risk rather than by borough, check a site's pest history before signing a lease, and build pest-proofing and the most common violations into the renovation checklist.
+
+---
+
+# Part 1: Data cleaning in SQL
+
+Cleaning the raw public export into an analysis-ready table.
 
 ## Dataset
 
@@ -79,7 +100,37 @@ raw_inspections  →  stg_inspections  →  stg_dedup  →  inspections_clean
 
 The CSV itself is not included in this repository (over GitHub's 100 MB file limit).
 
+# Part 2: Analysis in SQL
+
+`nyc_inspections_analysis.sql` builds the analysis on top of `inspections_clean`:
+
+| Step | What it does | SQL used |
+|---|---|---|
+| A | Table `inspections`: one row per inspection (92,902 rows), so scores are not counted once per violation | `GROUP BY`, conditional `SUM` / `MAX` |
+| B | Borough comparison on routine first inspections | `AVG(condition)` for shares |
+| C | Top 5 cuisines per borough and their share | CTE, `ROW_NUMBER()`, `SUM() OVER (PARTITION BY)` |
+| D | Most common violations; preventable vs daily | `CASE` + `IN`, window `SUM() OVER ()` |
+| E | Violations at all inspections vs at closures | two CTEs + `LEFT JOIN`, `COALESCE` |
+| F | Restaurant-level data with pest violations for the map | conditional `SUM` |
+
+Results of steps B, C, E and F were exported as CSV files for Tableau.
+
+# Part 3: Dashboard
+
+[Tableau Public dashboard](https://public.tableau.com/views/NYCRestaurantInspections_17956346991850/Dashboard1) with four views: average score by borough, top 5 cuisines by borough, top violations at closures, and a map of restaurants by pest violations.
+
+![Dashboard](dashboard.png)
+
+## Limitations and next steps
+
+- Inspection data shows how many restaurants exist (supply), not customer demand.
+- Closures here are temporary closures by the health department, not businesses closed for good.
+- Next: pest violations by neighborhood (NTA / ZIP), score trends by year, and adding rent, foot-traffic and review data.
+
 ## Files
 
 - `nyc_inspections_cleaning.sql`: full cleaning script, step by step with comments
+- `nyc_inspections_analysis.sql`: analysis queries and CSV exports for Tableau
+- `case_study_report.pdf`: full case study report (Ask → Prepare → Process → Analyze → Share → Act)
+- `dashboard.png`: screenshot of the Tableau dashboard
 - `README.md`: this file
